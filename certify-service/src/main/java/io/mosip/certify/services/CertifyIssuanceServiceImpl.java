@@ -498,7 +498,8 @@ public class CertifyIssuanceServiceImpl implements VCIssuanceService {
         log.info("Credential request validated successfully.");
 
         // Extract the JWT access token from the proof
-        String accessToken = credentialRequest.getProof().getJwt();
+        String jwt = credentialRequest.getProof().getJwt();
+        String accessToken = credentialRequest.getProof().getAccess_token();
         log.info("Using access token from credential proof: {}", accessToken);
 
         // Validate the JWT using JwtKeyUtil and obtain the claims set
@@ -560,32 +561,33 @@ public class CertifyIssuanceServiceImpl implements VCIssuanceService {
         // Validate the proof using the appropriate proof validator
         ProofValidator proofValidator = proofValidatorFactory
                 .getProofValidator(credentialRequest.getProof().getProof_type());
-        // log.info("Starting proof validation with validator: {}",
-        // proofValidator.getClass().getSimpleName());
-        // boolean isProofValid=false;
-        // try {
-        // isProofValid = proofValidator.validate(
-        // claimsSet.getStringClaim(Constants.CLIENT_ID),
-        // getValidClientNonce(),
-        // credentialRequest.getProof());
-        // } catch (ParseException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-        // if (!isProofValid) {
-        // log.error("Proof validation failed for credential request: {}",
-        // credentialRequest);
-        // throw new CertifyException(ErrorConstants.INVALID_PROOF);
-        // }
-        // log.info("Proof validation successful.");
+                
+        log.info("Starting proof validation with validator: {}",
+        proofValidator.getClass().getSimpleName());
+        boolean isProofValid=false;
+        try {
+        isProofValid = proofValidator.validate(
+        claimsSet.getStringClaim(Constants.CLIENT_ID),
+        getValidClientNonce(),
+        credentialRequest.getProof());
+        } catch (ParseException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+        }
+        if (!isProofValid) {
+        log.error("Proof validation failed for credential request: {}",
+        credentialRequest);
+        throw new CertifyException(ErrorConstants.INVALID_PROOF);
+        }
+        log.info("Proof validation successful.");
 
         // Retrieve the verifiable credential from the configured plugin implementation
         log.info("Retrieving verifiable credential from the plugin implementation.");
         // VCResult<?> vcResult = getVerifiableCredentialNew(credentialRequest,
         // credentialMetadata,
         // proofValidator.getKeyMaterialNew(credentialRequest.getProof()));
-        VCResult<?> vcResult = getVerifiableCredentialNew(credentialRequest, credentialMetadata,
-                "test");
+        log.info("Holder ID: {}", proofValidator.getKeyMaterialNew(credentialRequest.getProof()));
+        VCResult<?> vcResult = getVerifiableCredentialNew(credentialRequest, credentialMetadata, proofValidator.getKeyMaterialNew(credentialRequest.getProof()));
         log.info("Verifiable credential obtained: {}", vcResult);
 
         // Log the successful audit using an access token hash computed from the token
@@ -644,7 +646,7 @@ public class CertifyIssuanceServiceImpl implements VCIssuanceService {
                     Map<String, Object> identityDetails = new HashMap<>();
                     // Instead of hardcoding, call the helper method using the access token from the
                     // proof:
-                    String subValue = JwtUtils.getSubFromUserInfo(credentialRequest.getProof().getJwt());
+                    String subValue = JwtUtils.getSubFromUserInfo(credentialRequest.getProof().getAccess_token());
                     identityDetails.put("sub", subValue);
                     JSONObject jsonObject = dataProviderPlugin.fetchData(identityDetails);
 

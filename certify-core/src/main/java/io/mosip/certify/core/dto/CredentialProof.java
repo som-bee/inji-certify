@@ -27,6 +27,9 @@ public class CredentialProof {
      */
     private String jwt;
 
+
+    private String access_token;
+
     /**
      * When proof_type is cwt, a proof object MUST include a cwt claim
      */
